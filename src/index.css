@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+
+/* Custom config to enable class strategy if needed, but in v4 it's often automatic or data-attribute. 
+   Ah, in v4 'darkMode' is 'media' by default. We want 'selector' (class). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background-color: transparent;
+}

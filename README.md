@@ -1,0 +1,107 @@
+# Fanyi Translator (MacOS Global Translation Utility)
+
+<p align="center">
+  <img src="public/icon.png" width="128" height="128" alt="Fanyi Icon">
+</p>
+
+[English](#english) | [中文](#中文)
+
+---
+
+<a name="english"></a>
+## 🇬🇧 English
+
+**Fanyi Translator** is a minimalist, global translation utility designed for macOS. Inspired by Spotlight and modern IMEs, it allows you to invoke a translation window anywhere with a keystroke, type your text, and commit the translation directly into your active application.
+
+### ✨ Key Features
+
+*   **Global Hotkey**: Toggle the translation bar instantly from any app (Default: `Cmd+Option+T`).
+*   **Minimalist Design**: Clean, distracting-free UI that floats over your windows. Supports **Light** and **Dark** modes (System sync).
+*   **Smart Translation**:
+    *   **Bing Translate**: Fast, unlimited, and free built-in translation.
+    *   **AI Integration**: Support for **DeepSeek**, **Zhipu**, **Qwen**, and other OpenAI-compatible APIs for high-quality, context-aware translations.
+*   **Auto-Paste**: Press `Enter` to translate and automatically paste the result into your text editor, browser, or chat window.
+*   **Menu Bar Integration**: Unobtrusive tray icon for quick access to settings and quitting.
+*   **Target Language**: Supports Auto-detection, English, Chinese, Japanese, Korean, French, and German.
+
+### 🚀 Installation
+
+1.  Download the latest `.dmg` from the [Releases](./release) folder.
+2.  Open the `.dmg` and drag **Fanyi Translator** to your `Applications` folder.
+3.  **Permissions**: On first launch, you must grant **Accessibility Permissions** to allow the app to simulate keystrokes (for the Auto-Paste feature).
+
+### 🛠 Usage
+
+1.  **Activate**: Press `Command + Option + T` (configurable).
+2.  **Translate**: Type your text. The translation updates in real-time (with debounce).
+3.  **Commit**: Press `Enter`. The translated text is copied to your clipboard and pasted into the previous active app.
+    *   *Tip: Press `Esc` to close the window without pasting.*
+4.  **Settings**: Hover over the top-right corner of the translation bar and click the **Gear Icon ⚙️**.
+    *   **Translation Source**: Switch between Bing (default) or OpenAI (DeepSeek/Zhipu).
+    *   **AI Configuration**: Enter your API Key, Base URL, and Model Name.
+    *   **Shortcut**: Click the input box and type your desired global hotkey.
+
+### 💻 Development
+
+Built with [Electron](https://www.electronjs.org/), [React](https://react.dev/), [Vite](https://vitejs.dev/), and [TailwindCSS](https://tailwindcss.com/).
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for macOS
+npm run build
+```
+
+---
+
+<a name="中文"></a>
+## 🇨🇳 中文
+
+**Fanyi Translator** 是一款专为 macOS 设计的极简全局翻译工具。灵感来源于 Spotlight 和现代输入法，允许您随时通过快捷键唤出翻译窗口，输入文本后，将翻译结果直接“上屏”至您当前的应用中。
+
+### ✨ 核心功能
+
+*   **全局快捷键**：在任何应用中随时呼出翻译栏（默认：`Cmd+Option+T`）。
+*   **极简设计**：干净、无干扰的悬浮界面。支持 **亮色** 和 **暗色** 模式（跟随系统）。
+*   **智能翻译**：
+    *   **Bing 翻译**：内置快速、免费的必应翻译，无需配置。
+    *   **AI 大模型**：支持配置 **DeepSeek (深度求索)**、**智谱清言**、**通义千问** 等兼容 OpenAI 格式的 API，提供更精准、更自然的翻译体验。
+*   **自动上屏**：按下 `Enter` 键确认，翻译结果将自动输入到您当前的光标位置（如编辑器、浏览器、微信等）。
+*   **菜单栏常驻**：顶部菜单栏图标，方便快速访问设置或退出应用，不占用 Dock 栏。
+*   **多语言支持**：支持自动检测，以及中、英、日、韩、法、德互译。
+
+### 🚀 安装说明
+
+1.  在 [release](./release) 文件夹中找到最新的 `.dmg` 安装包。
+2.  双击 `.dmg` 并将 **Fanyi Translator** 拖入 `应用程序 (Applications)` 文件夹。
+3.  **权限授予**：首次运行时，系统会提示授予 **辅助功能 (Accessibility)** 权限。这是实现“自动粘贴”功能所必需的，请前往“系统设置 -> 隐私与安全性 -> 辅助功能”中勾选本应用。
+
+### 🛠 使用指南
+
+1.  **唤出**：按下 `Command + Option + T`（可在设置中修改）。
+2.  **翻译**：直接输入文字，并在上方查看实时翻译结果。
+3.  **确认/上屏**：按下 `Enter`。译文会自动复制并粘贴到您刚才工作的窗口中。
+    *   *提示：按 `Esc` 可直接关闭窗口而不进行任何操作。*
+4.  **设置**：将鼠标悬停在翻译栏右上角，点击出现的 **齿轮图标 ⚙️**。
+    *   **翻译源**：选择 Bing（默认）或 OpenAI（自定义 AI 模型）。
+    *   **AI 配置**：填写您的 API Key、Base URL 和模型名称（如 `deepseek-chat`）。
+    *   **快捷键**：在输入框中按下您习惯的组合键即可修改。
+
+### 💻 开发构建
+
+本项目基于 [Electron](https://www.electronjs.org/), [React](https://react.dev/), [Vite](https://vitejs.dev/) 和 [TailwindCSS](https://tailwindcss.com/) 构建。
+
+```bash
+# 安装依赖
+npm install
+
+# 启动开发环境
+npm run dev
+
+# 打包 macOS 应用 (.dmg)
+npm run build
+```
