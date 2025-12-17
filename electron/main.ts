@@ -5,6 +5,7 @@ import { exec } from 'node:child_process'
 import { translate as bingTranslate } from 'bing-translate-api'
 import Store from 'electron-store'
 import OpenAI from 'openai'
+import fs from 'node:fs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 process.env.APP_ROOT = path.join(__dirname, '..')
@@ -25,6 +26,11 @@ type StoreType = {
     baseURL: string;
     model: string;
   };
+  screenshotTranslation: {
+    enabled: boolean;
+    hotkey: string;
+    glmApiKey: string;
+  };
 }
 
 const store = new Store<StoreType>({
@@ -37,11 +43,17 @@ const store = new Store<StoreType>({
       apiKey: '',
       baseURL: 'https://api.deepseek.com/v1',
       model: 'deepseek-chat'
+    },
+    screenshotTranslation: {
+      enabled: true,
+      hotkey: 'Command+Shift+A',
+      glmApiKey: ''
     }
   }
 });
 
 let win: BrowserWindow | null
+let screenshotWin: BrowserWindow | null = null
 let tray: Tray | null
 
 function createWindow() {
@@ -137,6 +149,7 @@ app.on('activate', () => {
 app.whenReady().then(() => {
   createWindow()
   registerHotkey()
+  registerScreenshotHotkey()
 
   // Tray Setup
   const iconPath = path.join(process.env.VITE_PUBLIC, 'icon.png');
@@ -187,6 +200,11 @@ ipcMain.on('close-window', () => {
   win?.hide()
   app.hide()
 })
+
+ipcMain.on('close-screenshot-window', () => {
+  screenshotWin?.close()
+})
+
 
 ipcMain.on('resize-window', (_event, width, height) => {
   win?.setSize(width, height);
@@ -288,3 +306,215 @@ ipcMain.handle('translate-text', async (_event, text) => {
 
   return "Unknown Source";
 })
+
+// ========== Screenshot Translation ==========
+
+function createScreenshotWindow() {
+  if (screenshotWin) return;
+
+  const iconPath = path.join(process.env.VITE_PUBLIC, 'icon.png');
+  const icon = nativeImage.createFromPath(iconPath);
+
+  screenshotWin = new BrowserWindow({
+    width: 500,
+    height: 400,
+    icon: icon,
+    frame: false,
+    transparent: false,
+    alwaysOnTop: true,
+    skipTaskbar: false,
+    resizable: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.mjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  screenshotWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
+  if (VITE_DEV_SERVER_URL) {
+    screenshotWin.loadURL(VITE_DEV_SERVER_URL + '?mode=screenshot')
+  } else {
+    screenshotWin.loadFile(path.join(RENDERER_DIST, 'index.html'), { hash: 'screenshot' })
+  }
+
+  screenshotWin.on('close', () => {
+    screenshotWin = null;
+  });
+}
+
+async function callGLM4V(imagePath: string, apiKey: string): Promise<string> {
+  try {
+    const imageBuffer = fs.readFileSync(imagePath);
+    const base64Image = imageBuffer.toString('base64');
+
+    const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'glm-4v-flash',
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: '请识别图片中的所有文字内容，按行返回。只输出文字，不要其他解释。'
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:image/png;base64,${base64Image}`
+              }
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'GLM API Error');
+    }
+
+    return data.choices[0]?.message?.content || '';
+  } catch (error: any) {
+    console.error('GLM-4V Error:', error);
+    throw error;
+  }
+}
+
+async function translateTextHelper(text: string): Promise<string> {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+
+  const source = store.get('source');
+  const targetLang = store.get('targetLang');
+
+  if (source === 'bing' || !source) {
+    try {
+      const hasChinese = /[\u4e00-\u9fa5]/.test(trimmed);
+      const lang = targetLang === 'auto' ? (hasChinese ? 'en' : 'zh-Hans') : targetLang;
+
+      const res = await bingTranslate(trimmed, null, lang);
+      return res?.translation || trimmed;
+    } catch (e) {
+      console.error("Bing Error:", e);
+      return trimmed;
+    }
+  }
+
+  if (source === 'openai') {
+    const config = store.get('openai');
+    if (!config.apiKey) return trimmed;
+
+    try {
+      const openai = new OpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.baseURL,
+      });
+
+      const prompt = `Translate the following text. Only output the translation:\n\n${trimmed}`;
+
+      const completion = await openai.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: config.model || "deepseek-chat",
+      });
+
+      return completion.choices[0]?.message?.content?.trim() || trimmed;
+    } catch (e: any) {
+      console.error("AI Error:", e);
+      return trimmed;
+    }
+  }
+
+  return trimmed;
+}
+
+function registerScreenshotHotkey() {
+  const config = store.get('screenshotTranslation');
+  if (!config.enabled) return;
+
+  const hotkey = config.hotkey;
+
+  try {
+    const ret = globalShortcut.register(hotkey, async () => {
+      console.log('Screenshot Hotkey Triggered');
+
+      win?.hide();
+      app.hide();
+
+      setTimeout(() => {
+        const tempPath = path.join(app.getPath('temp'), `screenshot-${Date.now()}.png`);
+
+        exec(`screencapture -i "${tempPath}"`, async (error) => {
+          app.show();
+
+          if (error) {
+            console.error('Screenshot cancelled or failed');
+            return;
+          }
+
+          if (!fs.existsSync(tempPath)) {
+            console.log('Screenshot cancelled');
+            return;
+          }
+
+          console.log('Screenshot captured');
+
+          const glmApiKey = store.get('screenshotTranslation').glmApiKey;
+          if (!glmApiKey) {
+            console.error('GLM API Key not configured');
+            return;
+          }
+
+          if (!screenshotWin) {
+            createScreenshotWindow();
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+
+          screenshotWin?.webContents.send('screenshot-processing');
+          screenshotWin?.show();
+          screenshotWin?.focus();
+
+          try {
+            const recognizedText = await callGLM4V(tempPath, glmApiKey);
+            console.log('Recognized:', recognizedText.substring(0, 100) + '...');
+
+            const translatedText = await translateTextHelper(recognizedText);
+            console.log('Translated:', translatedText.substring(0, 100) + '...');
+
+            screenshotWin?.webContents.send('screenshot-result', {
+              original: recognizedText,
+              translated: translatedText
+            });
+
+          } catch (err: any) {
+            console.error('Processing error:', err);
+            screenshotWin?.webContents.send('screenshot-error', err.message);
+          } finally {
+            try {
+              fs.unlinkSync(tempPath);
+            } catch (e) {
+              // Ignore
+            }
+          }
+        });
+      }, 300);
+    });
+
+    if (!ret) {
+      console.error('Screenshot hotkey failed:', hotkey);
+    } else {
+      console.log('Registered screenshot hotkey:', hotkey);
+    }
+  } catch (e) {
+    console.error('Invalid screenshot hotkey:', hotkey);
+  }
+}
+

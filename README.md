@@ -16,6 +16,7 @@
 ### ✨ Key Features
 
 *   **Global Hotkey**: Toggle the translation bar instantly from any app (Default: `Cmd+Option+T`).
+*   **Screenshot Translation (NEW in v1.1.0)**: Capture any part of your screen and translate text from images using GLM-4V OCR (Default: `Cmd+Shift+A`).
 *   **Minimalist Design**: Clean, distracting-free UI that floats over your windows. Supports **Light** and **Dark** modes (System sync).
 *   **Smart Translation**:
     *   **Bing Translate**: Fast, unlimited, and free built-in translation.
@@ -32,14 +33,25 @@
 
 ### 🛠 Usage
 
+#### Main Translation
 1.  **Activate**: Press `Command + Option + T` (configurable).
 2.  **Translate**: Type your text. The translation updates in real-time (with debounce).
 3.  **Commit**: Press `Enter`. The translated text is copied to your clipboard and pasted into the previous active app.
     *   *Tip: Press `Esc` to close the window without pasting.*
-4.  **Settings**: Hover over the top-right corner of the translation bar and click the **Gear Icon ⚙️**.
-    *   **Translation Source**: Switch between Bing (default) or OpenAI (DeepSeek/Zhipu).
-    *   **AI Configuration**: Enter your API Key, Base URL, and Model Name.
-    *   **Shortcut**: Click the input box and type your desired global hotkey.
+
+#### Screenshot Translation (NEW)
+1.  **Activate**: Press `Command + Shift + A` (configurable).
+2.  **Capture**: Select the screen area containing text you want to translate.
+3.  **Wait**: The app will use GLM-4V to recognize text and translate it automatically.
+4.  **View Results**: See both original recognized text and translation in a popup window.
+    *   *Tip: Click the copy button to copy the translation to clipboard.*
+
+#### Settings
+Hover over the top-right corner of the translation bar and click the **Gear Icon ⚙️**:
+*   **Translation Source**: Switch between Bing (default) or OpenAI (DeepSeek/Zhipu).
+*   **AI Configuration**: Enter your API Key, Base URL, and Model Name.
+*   **Screenshot Translation**: Enable/disable, configure hotkey, and set GLM API Key (get free key from [bigmodel.cn](https://bigmodel.cn/console/apikey)).
+*   **Shortcut**: Click the input box and type your desired global hotkey.
 
 ### 💻 Development
 
@@ -66,6 +78,7 @@ npm run build
 ### ✨ 核心功能
 
 *   **全局快捷键**：在任何应用中随时呼出翻译栏（默认：`Cmd+Option+T`）。
+*   **截图翻译（v1.1.0 新功能）**：截取屏幕任意区域，使用 GLM-4V 识别图片中的文字并翻译（默认：`Cmd+Shift+A`）。
 *   **极简设计**：干净、无干扰的悬浮界面。支持 **亮色** 和 **暗色** 模式（跟随系统）。
 *   **智能翻译**：
     *   **Bing 翻译**：内置快速、免费的必应翻译，无需配置。
@@ -82,14 +95,25 @@ npm run build
 
 ### 🛠 使用指南
 
+#### 主翻译功能
 1.  **唤出**：按下 `Command + Option + T`（可在设置中修改）。
 2.  **翻译**：直接输入文字，并在上方查看实时翻译结果。
 3.  **确认/上屏**：按下 `Enter`。译文会自动复制并粘贴到您刚才工作的窗口中。
     *   *提示：按 `Esc` 可直接关闭窗口而不进行任何操作。*
-4.  **设置**：将鼠标悬停在翻译栏右上角，点击出现的 **齿轮图标 ⚙️**。
-    *   **翻译源**：选择 Bing（默认）或 OpenAI（自定义 AI 模型）。
-    *   **AI 配置**：填写您的 API Key、Base URL 和模型名称（如 `deepseek-chat`）。
-    *   **快捷键**：在输入框中按下您习惯的组合键即可修改。
+
+#### 截图翻译（新功能）
+1.  **唤出**：按下 `Command + Shift + A`（可在设置中修改）。
+2.  **截图**：选择屏幕中包含要翻译文字的区域。
+3.  **等待**：应用会使用 GLM-4V 自动识别文字并翻译。
+4.  **查看结果**：在弹出窗口中查看识别的原文和翻译结果。
+    *   *提示：点击复制按钮可将译文复制到剪贴板。*
+
+#### 设置
+将鼠标悬停在翻译栏右上角，点击出现的 **齿轮图标 ⚙️**：
+*   **翻译源**：选择 Bing（默认）或 OpenAI（自定义 AI 模型）。
+*   **AI 配置**：填写您的 API Key、Base URL 和模型名称（如 `deepseek-chat`）。
+*   **截图翻译**：启用/禁用，配置快捷键，设置 GLM API Key（可从 [bigmodel.cn](https://bigmodel.cn/console/apikey) 免费获取）。
+*   **快捷键**：在输入框中按下您习惯的组合键即可修改。
 
 ### 💻 开发构建
 

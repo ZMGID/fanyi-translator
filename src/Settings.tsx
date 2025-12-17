@@ -12,6 +12,11 @@ type SettingsData = {
         baseURL: string;
         model: string;
     };
+    screenshotTranslation: {
+        enabled: boolean;
+        hotkey: string;
+        glmApiKey: string;
+    };
 }
 
 interface SettingsProps {
@@ -151,6 +156,48 @@ export default function Settings({ onClose, onSettingsChange }: SettingsProps) {
                         </div>
                     </div>
                 )}
+
+                <div className="border-t dark:border-gray-700 my-2"></div>
+
+                {/* Screenshot Translation */}
+                <div className="space-y-3 p-3 bg-purple-50/30 dark:bg-purple-900/10 rounded border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">截图翻译 (Screenshot)</label>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={settings.screenshotTranslation?.enabled ?? true}
+                                onChange={(e) => setSettings({ ...settings, screenshotTranslation: { ...(settings.screenshotTranslation || { hotkey: 'Command+Shift+A', glmApiKey: '' }), enabled: e.target.checked } })}
+                            />
+                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+                    {settings.screenshotTranslation?.enabled && (
+                        <>
+                            <div>
+                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Screenshot Hotkey</label>
+                                <input
+                                    className="w-full p-2 border dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm font-mono"
+                                    value={settings.screenshotTranslation?.hotkey || 'Command+Shift+A'}
+                                    onChange={(e) => setSettings({ ...settings, screenshotTranslation: { ...settings.screenshotTranslation, enabled: true, glmApiKey: settings.screenshotTranslation?.glmApiKey || '', hotkey: e.target.value } })}
+                                    placeholder="Command+Shift+A"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">GLM API Key (智谱AI)</label>
+                                <input
+                                    type="password"
+                                    className="w-full p-2 border dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm font-mono"
+                                    value={settings.screenshotTranslation?.glmApiKey || ''}
+                                    onChange={(e) => setSettings({ ...settings, screenshotTranslation: { ...settings.screenshotTranslation, enabled: true, hotkey: settings.screenshotTranslation?.hotkey || 'Command+Shift+A', glmApiKey: e.target.value } })}
+                                    placeholder="从 bigmodel.cn 获取"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">访问 <a href="#" onClick={() => window.ipcRenderer?.send('open-external', 'https://bigmodel.cn/console/apikey')} className="text-blue-500 hover:underline">bigmodel.cn</a> 获取免费 API Key</p>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
             <div className="pt-4 mt-2 border-t dark:border-gray-700 flex justify-between items-center">

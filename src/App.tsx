@@ -1,14 +1,24 @@
 import { useState, useEffect } from 'react'
 import { Settings as SettingsIcon } from 'lucide-react'
 import Settings from './Settings'
+import ScreenshotResult from './ScreenshotResult'
 import './index.css'
 
 function App() {
+  // Check URL mode for screenshot result
+  const urlParams = new URLSearchParams(window.location.search);
+  const mode = urlParams.get('mode') || window.location.hash.replace('#', '');
+
+  if (mode === 'screenshot') {
+    return <ScreenshotResult />;
+  }
+
   const [input, setInput] = useState('')
   const [result, setResult] = useState('')
   const [loading, setLoading] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>('system')
+
 
   // Load Theme Preference and Apply
   const applyTheme = async () => {
