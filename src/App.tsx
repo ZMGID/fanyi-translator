@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Settings as SettingsIcon } from 'lucide-react'
 import Settings from './Settings'
 import ScreenshotResult from './ScreenshotResult'
@@ -18,6 +18,8 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>('system')
+  const resultRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
 
   // Load Theme Preference and Apply
@@ -99,6 +101,20 @@ function App() {
     return () => clearTimeout(timer)
   }, [input, showSettings])
 
+  // Auto-scroll translation result to bottom when it updates
+  useEffect(() => {
+    if (resultRef.current) {
+      resultRef.current.scrollTop = resultRef.current.scrollHeight;
+    }
+  }, [result])
+
+  // Auto-scroll input to show cursor (keep right side visible)
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.scrollLeft = inputRef.current.scrollWidth;
+    }
+  }, [input])
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (showSettings) return; // Don't handle shortcuts in settings mode
 
@@ -140,7 +156,9 @@ function App() {
       </button>
 
       {(result || loading) && (
-        <div className="w-full mb-1 px-2 py-1 bg-blue-50/50 dark:bg-blue-900/30 rounded text-base text-gray-800 dark:text-gray-200 font-medium select-text no-drag"
+        <div
+          ref={resultRef}
+          className="w-full mb-1 px-2 py-1 pr-8 bg-blue-50/50 dark:bg-blue-900/30 rounded text-base text-gray-800 dark:text-gray-200 font-medium select-text no-drag max-h-24 overflow-y-auto"
           style={{ WebkitAppRegion: 'no-drag' } as any}>
           {loading ? <span className="text-gray-400 text-sm">Translating...</span> : result}
         </div>
@@ -148,8 +166,9 @@ function App() {
 
       <div className="flex items-center w-full">
         <input
+          ref={inputRef}
           autoFocus
-          className="w-full px-2 py-1 bg-transparent text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none no-drag"
+          className="w-full px-2 py-1 pr-8 bg-transparent text-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none no-drag"
           style={{ WebkitAppRegion: 'no-drag' } as any}
           placeholder="Translation input..."
           value={input}

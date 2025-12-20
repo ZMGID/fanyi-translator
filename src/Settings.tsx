@@ -15,6 +15,7 @@ type SettingsData = {
     screenshotTranslation: {
         enabled: boolean;
         hotkey: string;
+        ocrSource: 'system' | 'glm';
         glmApiKey: string;
     };
 }
@@ -180,21 +181,50 @@ export default function Settings({ onClose, onSettingsChange }: SettingsProps) {
                                 <input
                                     className="w-full p-2 border dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm font-mono"
                                     value={settings.screenshotTranslation?.hotkey || 'Command+Shift+A'}
-                                    onChange={(e) => setSettings({ ...settings, screenshotTranslation: { ...settings.screenshotTranslation, enabled: true, glmApiKey: settings.screenshotTranslation?.glmApiKey || '', hotkey: e.target.value } })}
+                                    onChange={(e) => setSettings({ ...settings, screenshotTranslation: { ...settings.screenshotTranslation, enabled: true, ocrSource: settings.screenshotTranslation?.ocrSource || 'system', glmApiKey: settings.screenshotTranslation?.glmApiKey || '', hotkey: e.target.value } })}
                                     placeholder="Command+Shift+A"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">GLM API Key (智谱AI)</label>
-                                <input
-                                    type="password"
-                                    className="w-full p-2 border dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm font-mono"
-                                    value={settings.screenshotTranslation?.glmApiKey || ''}
-                                    onChange={(e) => setSettings({ ...settings, screenshotTranslation: { ...settings.screenshotTranslation, enabled: true, hotkey: settings.screenshotTranslation?.hotkey || 'Command+Shift+A', glmApiKey: e.target.value } })}
-                                    placeholder="从 bigmodel.cn 获取"
-                                />
-                                <p className="text-xs text-gray-400 mt-1">访问 <a href="#" onClick={() => window.ipcRenderer?.send('open-external', 'https://bigmodel.cn/console/apikey')} className="text-blue-500 hover:underline">bigmodel.cn</a> 获取免费 API Key</p>
+                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">OCR 识别源</label>
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="ocrSource"
+                                            value="system"
+                                            checked={settings.screenshotTranslation?.ocrSource === 'system' || !settings.screenshotTranslation?.ocrSource}
+                                            onChange={() => setSettings({ ...settings, screenshotTranslation: { ...settings.screenshotTranslation, enabled: true, hotkey: settings.screenshotTranslation?.hotkey || 'Command+Shift+A', glmApiKey: settings.screenshotTranslation?.glmApiKey || '', ocrSource: 'system' } })}
+                                            className="w-4 h-4"
+                                        />
+                                        <span className="text-sm">系统 OCR (离线，免费)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="ocrSource"
+                                            value="glm"
+                                            checked={settings.screenshotTranslation?.ocrSource === 'glm'}
+                                            onChange={() => setSettings({ ...settings, screenshotTranslation: { ...settings.screenshotTranslation, enabled: true, hotkey: settings.screenshotTranslation?.hotkey || 'Command+Shift+A', glmApiKey: settings.screenshotTranslation?.glmApiKey || '', ocrSource: 'glm' } })}
+                                            className="w-4 h-4"
+                                        />
+                                        <span className="text-sm">GLM-4V (在线，精度更高)</span>
+                                    </label>
+                                </div>
                             </div>
+                            {settings.screenshotTranslation?.ocrSource === 'glm' && (
+                                <div>
+                                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">GLM API Key (智谱AI)</label>
+                                    <input
+                                        type="password"
+                                        className="w-full p-2 border dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm font-mono"
+                                        value={settings.screenshotTranslation?.glmApiKey || ''}
+                                        onChange={(e) => setSettings({ ...settings, screenshotTranslation: { ...settings.screenshotTranslation, enabled: true, hotkey: settings.screenshotTranslation?.hotkey || 'Command+Shift+A', ocrSource: 'glm', glmApiKey: e.target.value } })}
+                                        placeholder="从 bigmodel.cn 获取"
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">访问 <a href="#" onClick={() => window.ipcRenderer?.send('open-external', 'https://bigmodel.cn/console/apikey')} className="text-blue-500 hover:underline">bigmodel.cn</a> 获取免费 API Key</p>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

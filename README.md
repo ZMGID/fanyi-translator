@@ -25,6 +25,23 @@
 *   **Menu Bar Integration**: Unobtrusive tray icon for quick access to settings and quitting.
 *   **Target Language**: Supports Auto-detection, English, Chinese, Japanese, Korean, French, and German.
 
+### 📋 Version History
+
+**v1.2.0** (2025-12-20)
+- ✨ Added **System OCR** option for screenshot translation (offline, free using macOS Vision framework)
+- 🔧 Improved input field UX - auto-scroll to show cursor, better text visibility
+- 🔧 Fixed settings save bug - changes now apply immediately without restart
+- 📝 Enhanced translation result display with auto-scroll to latest content
+
+**v1.1.0** (2025-12-17)
+- ✨ Added **Screenshot Translation** feature with GLM-4V OCR
+- 🎨 New screenshot result UI with copy functionality
+
+**v1.0.0** (Initial Release)
+- 🚀 Global translation with customizable hotkey
+- 🤖 Bing Translate and AI model (DeepSeek/Zhipu) support
+- 🎨 Light/Dark mode with system sync
+
 ### 🚀 Installation
 
 1.  Download the latest `.dmg` from the [Releases](./release) folder.
@@ -42,7 +59,9 @@
 #### Screenshot Translation (NEW)
 1.  **Activate**: Press `Command + Shift + A` (configurable).
 2.  **Capture**: Select the screen area containing text you want to translate.
-3.  **Wait**: The app will use GLM-4V to recognize text and translate it automatically.
+3.  **Wait**: The app will recognize text using your selected OCR engine and translate it automatically.
+    *   **System OCR** (default): Uses macOS Vision framework - offline and free
+    *   **GLM-4V**: Online AI model - higher accuracy, requires API key
 4.  **View Results**: See both original recognized text and translation in a popup window.
     *   *Tip: Click the copy button to copy the translation to clipboard.*
 
@@ -50,7 +69,10 @@
 Hover over the top-right corner of the translation bar and click the **Gear Icon ⚙️**:
 *   **Translation Source**: Switch between Bing (default) or OpenAI (DeepSeek/Zhipu).
 *   **AI Configuration**: Enter your API Key, Base URL, and Model Name.
-*   **Screenshot Translation**: Enable/disable, configure hotkey, and set GLM API Key (get free key from [bigmodel.cn](https://bigmodel.cn/console/apikey)).
+*   **Screenshot Translation**: 
+    *   Enable/disable screenshot translation
+    *   Configure hotkey
+    *   Choose **OCR Source**: System OCR (offline, free) or GLM-4V (online, requires API key from [bigmodel.cn](https://bigmodel.cn/console/apikey))
 *   **Shortcut**: Click the input box and type your desired global hotkey.
 
 ### 💻 Development
@@ -87,6 +109,23 @@ npm run build
 *   **菜单栏常驻**：顶部菜单栏图标，方便快速访问设置或退出应用，不占用 Dock 栏。
 *   **多语言支持**：支持自动检测，以及中、英、日、韩、法、德互译。
 
+### 📋 版本历史
+
+**v1.2.0** (2025-12-20)
+- ✨ 新增**系统 OCR** 选项用于截图翻译（离线、免费，使用 macOS Vision 框架）
+- 🔧 优化输入框体验 - 自动滚动显示光标，文字可见性更好
+- 🔧 修复设置保存问题 - 设置更改立即生效，无需重启
+- 📝 增强翻译结果显示，自动滚动到最新内容
+
+**v1.1.0** (2025-12-17)
+- ✨ 新增**截图翻译**功能，支持 GLM-4V OCR
+- 🎨 全新截图结果界面，支持复制功能
+
+**v1.0.0** (首次发布)
+- 🚀 全局翻译，支持自定义快捷键
+- 🤖 Bing 翻译和 AI 模型（DeepSeek/智谱）支持
+- 🎨 亮色/暗色主题，跟随系统
+
 ### 🚀 安装说明
 
 1.  在 [release](./release) 文件夹中找到最新的 `.dmg` 安装包。
@@ -104,7 +143,9 @@ npm run build
 #### 截图翻译（新功能）
 1.  **唤出**：按下 `Command + Shift + A`（可在设置中修改）。
 2.  **截图**：选择屏幕中包含要翻译文字的区域。
-3.  **等待**：应用会使用 GLM-4V 自动识别文字并翻译。
+3.  **等待**：应用会使用您选择的 OCR 引擎自动识别文字并翻译。
+    *   **系统 OCR**（默认）：使用 macOS Vision 框架 - 离线且免费
+    *   **GLM-4V**：在线 AI 模型 - 精度更高，需要 API Key
 4.  **查看结果**：在弹出窗口中查看识别的原文和翻译结果。
     *   *提示：点击复制按钮可将译文复制到剪贴板。*
 
@@ -112,7 +153,10 @@ npm run build
 将鼠标悬停在翻译栏右上角，点击出现的 **齿轮图标 ⚙️**：
 *   **翻译源**：选择 Bing（默认）或 OpenAI（自定义 AI 模型）。
 *   **AI 配置**：填写您的 API Key、Base URL 和模型名称（如 `deepseek-chat`）。
-*   **截图翻译**：启用/禁用，配置快捷键，设置 GLM API Key（可从 [bigmodel.cn](https://bigmodel.cn/console/apikey) 免费获取）。
+*   **截图翻译**：
+    *   启用/禁用截图翻译功能
+    *   配置快捷键
+    *   选择 **OCR 识别源**：系统 OCR（离线，免费）或 GLM-4V（在线，需要从 [bigmodel.cn](https://bigmodel.cn/console/apikey) 获取免费 API Key）
 *   **快捷键**：在输入框中按下您习惯的组合键即可修改。
 
 ### 💻 开发构建

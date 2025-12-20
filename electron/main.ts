@@ -29,6 +29,7 @@ type StoreType = {
   screenshotTranslation: {
     enabled: boolean;
     hotkey: string;
+    ocrSource: 'system' | 'glm';  // system = macOS Vision, glm = GLM-4V
     glmApiKey: string;
   };
 }
@@ -47,6 +48,7 @@ const store = new Store<StoreType>({
     screenshotTranslation: {
       enabled: true,
       hotkey: 'Command+Shift+A',
+      ocrSource: 'system',  // Default to system OCR (offline)
       glmApiKey: ''
     }
   }
@@ -229,7 +231,14 @@ ipcMain.handle('get-settings', () => {
 
 ipcMain.handle('save-settings', (_event, newSettings) => {
   store.set(newSettings);
-  registerHotkey(); // Re-register in case hotkey changed
+
+  // Unregister all hotkeys first
+  globalShortcut.unregisterAll();
+
+  // Re-register both hotkeys with new settings
+  registerHotkey();
+  registerScreenshotHotkey();
+
   return true;
 })
 
@@ -389,6 +398,77 @@ async function callGLM4V(imagePath: string, apiKey: string): Promise<string> {
   }
 }
 
+async function callSystemOCR(imagePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Use Swift to call macOS Vision framework
+    const swiftScript = `
+import Foundation
+import Vision
+import AppKit
+
+let imagePath = CommandLine.arguments[1]
+guard let image = NSImage(contentsOfFile: imagePath),
+      let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+    print("Error: Could not load image")
+    exit(1)
+}
+
+let request = VNRecognizeTextRequest { request, error in
+    guard let observations = request.results as? [VNRecognizedTextObservation] else {
+        print("")
+        exit(0)
+    }
+    
+    let recognizedStrings = observations.compactMap { observation in
+        observation.topCandidates(1).first?.string
+    }
+    
+    print(recognizedStrings.joined(separator: "\\n"))
+    exit(0)
+}
+
+request.recognitionLevel = .accurate
+request.usesLanguageCorrection = true
+
+let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+try? handler.perform([request])
+
+RunLoop.main.run(until: Date(timeIntervalSinceNow: 10))
+`;
+
+    // Write Swift script to temp file
+    const scriptPath = path.join(app.getPath('temp'), 'ocr_script.swift');
+    fs.writeFileSync(scriptPath, swiftScript);
+
+    // Compile and run Swift script
+    const outputPath = path.join(app.getPath('temp'), 'ocr_binary');
+
+    exec(`swiftc "${scriptPath}" -o "${outputPath}" && "${outputPath}" "${imagePath}"`, (error, stdout, stderr) => {
+      // Clean up
+      try {
+        fs.unlinkSync(scriptPath);
+        fs.unlinkSync(outputPath);
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+
+      if (error) {
+        console.error('System OCR Error:', stderr || error.message);
+        reject(new Error('系统OCR识别失败: ' + (stderr || error.message)));
+        return;
+      }
+
+      const recognizedText = stdout.trim();
+      if (!recognizedText) {
+        resolve('未识别到文字');
+        return;
+      }
+
+      resolve(recognizedText);
+    });
+  });
+}
+
 async function translateTextHelper(text: string): Promise<string> {
   const trimmed = text.trim();
   if (!trimmed) return "";
@@ -467,8 +547,11 @@ function registerScreenshotHotkey() {
 
           console.log('Screenshot captured');
 
-          const glmApiKey = store.get('screenshotTranslation').glmApiKey;
-          if (!glmApiKey) {
+          const config = store.get('screenshotTranslation');
+          const ocrSource = config.ocrSource || 'system';
+
+          // Check API key only if using GLM
+          if (ocrSource === 'glm' && !config.glmApiKey) {
             console.error('GLM API Key not configured');
             return;
           }
@@ -483,7 +566,17 @@ function registerScreenshotHotkey() {
           screenshotWin?.focus();
 
           try {
-            const recognizedText = await callGLM4V(tempPath, glmApiKey);
+            let recognizedText: string;
+
+            // Choose OCR method based on config
+            if (ocrSource === 'system') {
+              console.log('Using system OCR (Vision framework)');
+              recognizedText = await callSystemOCR(tempPath);
+            } else {
+              console.log('Using GLM-4V OCR');
+              recognizedText = await callGLM4V(tempPath, config.glmApiKey);
+            }
+
             console.log('Recognized:', recognizedText.substring(0, 100) + '...');
 
             const translatedText = await translateTextHelper(recognizedText);
