@@ -2,15 +2,21 @@ import { useState, useEffect, useRef } from 'react'
 import { Settings as SettingsIcon } from 'lucide-react'
 import Settings from './Settings'
 import ScreenshotResult from './ScreenshotResult'
+import ScreenshotExplain from './ScreenshotExplain'
 import './index.css'
 
 function App() {
-  // Check URL mode for screenshot result
+  // Check URL mode for screenshot result or explain
   const urlParams = new URLSearchParams(window.location.search);
-  const mode = urlParams.get('mode') || window.location.hash.replace('#', '');
+  const hash = window.location.hash.replace('#', '');
+  const mode = urlParams.get('mode') || hash.split('?')[0];
 
   if (mode === 'screenshot') {
     return <ScreenshotResult />;
+  }
+
+  if (mode === 'explain') {
+    return <ScreenshotExplain />;
   }
 
   const [input, setInput] = useState('')
@@ -134,9 +140,17 @@ function App() {
 
   // Settings View
   if (showSettings) {
+    const handleCloseSettings = () => {
+      setShowSettings(false);
+      // Hide window after closing settings (useful when opened from tray)
+      if (window.ipcRenderer) {
+        window.ipcRenderer.send('hide-window');
+      }
+    };
+
     return (
       <div className="h-screen w-screen bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
-        <Settings onClose={() => setShowSettings(false)} onSettingsChange={applyTheme} />
+        <Settings onClose={handleCloseSettings} onSettingsChange={applyTheme} />
       </div>
     )
   }

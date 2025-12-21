@@ -32,6 +32,28 @@ type StoreType = {
     ocrSource: 'system' | 'glm';  // system = macOS Vision, glm = GLM-4V
     glmApiKey: string;
   };
+  screenshotExplain: {
+    enabled: boolean;
+    hotkey: string;
+    model: {
+      provider: 'glm' | 'openai';
+      apiKey: string;
+      baseURL: string;
+      modelName: string;
+    };
+    defaultLanguage: 'zh' | 'en';
+    customPrompts?: {
+      systemPrompt?: string;
+      summaryPrompt?: string;
+      questionPrompt?: string;
+    };
+  };
+  explainHistory: Array<{
+    id: string;
+    imagePath: string;
+    timestamp: number;
+    messages: Array<{ role: string; content: string }>;
+  }>;
 }
 
 const store = new Store<StoreType>({
@@ -50,12 +72,25 @@ const store = new Store<StoreType>({
       hotkey: 'Command+Shift+A',
       ocrSource: 'system',  // Default to system OCR (offline)
       glmApiKey: ''
-    }
+    },
+    screenshotExplain: {
+      enabled: true,
+      hotkey: 'Command+Shift+E',
+      model: {
+        provider: 'glm',
+        apiKey: '',
+        baseURL: 'https://open.bigmodel.cn/api/paas/v4',
+        modelName: 'glm-4v-flash'
+      },
+      defaultLanguage: 'zh'
+    },
+    explainHistory: []
   }
 });
 
 let win: BrowserWindow | null
 let screenshotWin: BrowserWindow | null = null
+let explainWin: BrowserWindow | null = null
 let tray: Tray | null
 
 function createWindow() {
@@ -152,6 +187,7 @@ app.whenReady().then(() => {
   createWindow()
   registerHotkey()
   registerScreenshotHotkey()
+  registerExplainHotkey()
 
   // Tray Setup
   const iconPath = path.join(process.env.VITE_PUBLIC, 'icon.png');
@@ -235,12 +271,17 @@ ipcMain.handle('save-settings', (_event, newSettings) => {
   // Unregister all hotkeys first
   globalShortcut.unregisterAll();
 
-  // Re-register both hotkeys with new settings
+  // Re-register all hotkeys with new settings
   registerHotkey();
   registerScreenshotHotkey();
+  registerExplainHotkey();
 
   return true;
 })
+
+ipcMain.on('hide-window', () => {
+  win?.hide();
+});
 
 ipcMain.on('open-external', (_event, url) => {
   shell.openExternal(url);
@@ -610,4 +651,299 @@ function registerScreenshotHotkey() {
     console.error('Invalid screenshot hotkey:', hotkey);
   }
 }
+
+// ============================================
+// Screenshot Explanation Functions
+// ============================================
+
+// Create Screenshot Explanation Window
+function createExplainWindow(imagePath: string) {
+  if (explainWin) {
+    explainWin.focus();
+    return;
+  }
+
+  explainWin = new BrowserWindow({
+    width: 700,
+    height: 800,
+    resizable: true,
+    frame: true,
+    titleBarStyle: 'hiddenInset',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.mjs'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  explainWin.on('closed', () => {
+    explainWin = null;
+  });
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    explainWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}#explain?image=${encodeURIComponent(imagePath)}`);
+  } else {
+    const distPath = process.env.DIST || path.join(__dirname, '../dist');
+    explainWin.loadFile(path.join(distPath, 'index.html'), {
+      hash: `explain?image=${encodeURIComponent(imagePath)}`
+    });
+  }
+}
+
+// Call Vision API (GLM-4V or OpenAI compatible)
+async function callVisionAPI(imagePath: string, messages: Array<{ role: string, content: any }>, language: string): Promise<string> {
+  const config = store.get('screenshotExplain');
+  const { provider, apiKey, baseURL, modelName } = config.model;
+
+  // Read and encode image
+  const imageBuffer = fs.readFileSync(imagePath);
+  const imageBase64 = imageBuffer.toString('base64');
+
+  // System prompt based on language (will be prepended to first user message)
+  const defaultSystemPrompt = language === 'zh'
+    ? '你是一个图片分析助手。请用自然流畅的语言回答，不要使用小标题、序号或分点列举。\n\n'
+    : 'You are an image analysis assistant. Please respond naturally without headings, bullet points, or numbered lists.\n\n';
+
+  const systemPrompt = config.customPrompts?.systemPrompt || defaultSystemPrompt;
+
+  // Build API messages
+  const apiMessages = messages.map((msg, index) => {
+    if (msg.role === 'user' && index === 0) {
+      // First user message includes the image
+      // Prepend system prompt to first user message (GLM doesn't support system role)
+      const userText = systemPrompt + msg.content;
+
+      return {
+        role: 'user',
+        content: [
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:image/png;base64,${imageBase64}`
+            }
+          },
+          {
+            type: 'text',
+            text: userText
+          }
+        ]
+      };
+    }
+    return msg;
+  });
+
+  // Construct API URL
+  let apiUrl = baseURL;
+  if (provider === 'glm') {
+    apiUrl = `${baseURL}/chat/completions`;
+  } else {
+    // OpenAI compatible
+    apiUrl = `${baseURL}/chat/completions`;
+  }
+
+  // Make API call
+  const requestBody: any = {
+    model: modelName,
+    messages: apiMessages,  // No system role for GLM
+    temperature: 0.7
+  };
+
+  // Only add max_tokens for OpenAI, not GLM
+  if (provider === 'openai') {
+    requestBody.max_tokens = 2000;
+  }
+
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Vision API Error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// Get initial summary for an image
+async function getInitialSummary(imagePath: string, language: string): Promise<string> {
+  const config = store.get('screenshotExplain');
+
+  const defaultPrompt = language === 'zh'
+    ? '你是一个图片分析助手。请简洁地总结这张图片的主要内容，不要使用小标题、序号或分点列举。\n\n要求：\n- 用1-3句话概括图片核心内容\n- 语言自然流畅，像在和朋友描述\n- 突出最重要的信息\n- 不要使用"图片显示..."这样的开头\n\n请用中文回复。'
+    : 'You are an image analysis assistant. Please provide a concise summary of this image\'s main content without using headings, bullet points, or numbered lists.\n\nRequirements:\n- Summarize in 1-3 natural sentences\n- Write conversationally as if describing to a friend\n- Highlight the most important information\n- Don\'t start with "The image shows..."\n\nPlease respond in English.';
+
+  const prompt = config.customPrompts?.summaryPrompt || defaultPrompt;
+
+  const messages = [
+    { role: 'user', content: prompt }
+  ];
+
+  return await callVisionAPI(imagePath, messages, language);
+}
+
+// Register Screenshot Explanation Hotkey
+function registerExplainHotkey() {
+  const config = store.get('screenshotExplain');
+  if (!config.enabled) {
+    return;
+  }
+
+  const hotkey = config.hotkey;
+
+
+  try {
+    globalShortcut.unregister(hotkey);
+
+    const ret = globalShortcut.register(hotkey, () => {
+      console.log('Explain Hotkey Triggered');
+
+      // Hide main window
+      win?.hide();
+
+      // Take screenshot
+      const tempImagePath = path.join(app.getPath('temp'), `explain-screenshot-${Date.now()}.png`);
+
+      exec(`screencapture -i "${tempImagePath}"`, async (error) => {
+        if (error) {
+          console.error('Screenshot error:', error);
+          win?.show();
+          return;
+        }
+
+        // Check if file exists (user might have cancelled)
+        if (!fs.existsSync(tempImagePath)) {
+          console.log('Screenshot cancelled');
+          win?.show();
+          return;
+        }
+
+        try {
+          // Create explain window with image path
+          createExplainWindow(tempImagePath);
+        } catch (err) {
+          console.error('Error creating explain window:', err);
+          win?.show();
+        }
+      });
+    });
+
+    if (!ret) {
+      console.error('Explain hotkey failed:', hotkey);
+    } else {
+      console.log('Registered explain hotkey:', hotkey);
+    }
+  } catch (e) {
+    console.error('Invalid explain hotkey:', hotkey);
+  }
+}
+
+// IPC Handlers for Screenshot Explanation
+ipcMain.handle('explain-get-initial-summary', async (_event, imagePath: string) => {
+  const language = store.get('screenshotExplain').defaultLanguage;
+  try {
+    const summary = await getInitialSummary(imagePath, language);
+    return { success: true, summary };
+  } catch (error: any) {
+    console.error('Error getting initial summary:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('explain-ask-question', async (_event, imagePath: string, messages: Array<{ role: string, content: string }>) => {
+  const language = store.get('screenshotExplain').defaultLanguage;
+  try {
+    // Build conversation with question prompt
+    const questionPrompt = language === 'zh'
+      ? `你是一个图片分析助手。用户正在询问关于这张图片的问题。\n\n要求：\n- 直接回答问题，不要使用小标题或分点列举\n- 语言自然、简洁\n- 基于图片内容回答\n- 如果问题与图片无关，礼貌地引导回到图片内容\n\n请用中文回复。`
+      : `You are an image analysis assistant. The user is asking a question about this image.\n\nRequirements:\n- Answer directly without headings or bullet points\n- Be natural and concise\n- Base your answer on the image content\n- If the question is unrelated to the image, politely guide back\n\nPlease respond in English.`;
+
+    const lastUserMessage = messages[messages.length - 1];
+    const userQuestion = lastUserMessage.content;
+
+    const apiMessages = messages.slice(0, -1).concat([
+      { role: 'user', content: `${questionPrompt}\n\n用户问题：${userQuestion}` }
+    ]);
+
+    const response = await callVisionAPI(imagePath, apiMessages, language);
+    return { success: true, response };
+  } catch (error: any) {
+    console.error('Error asking question:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('explain-read-image', async (_event, imagePath: string) => {
+  try {
+    const imageBuffer = fs.readFileSync(imagePath);
+    const base64 = imageBuffer.toString('base64');
+    return { success: true, data: `data:image/png;base64,${base64}` };
+  } catch (error: any) {
+    console.error('Error reading image:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.on('close-explain-window', () => {
+  if (explainWin) {
+    explainWin.close();
+    explainWin = null;
+  }
+});
+
+// Save explanation to history (max 5 records)
+ipcMain.handle('explain-save-history', async (_event, _imagePath: string, messages: Array<{ role: string; content: string }>) => {
+  try {
+    const history = store.get('explainHistory') || [];
+    const newRecord = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      messages  // Only save messages, no images
+    };
+
+    // Add to beginning and keep only last 5
+    const updatedHistory = [newRecord, ...history].slice(0, 5);
+    store.set('explainHistory', updatedHistory);
+
+    console.log('History saved, total:', updatedHistory.length);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error saving history:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Get explanation history
+ipcMain.handle('explain-get-history', async () => {
+  try {
+    const history = store.get('explainHistory') || [];
+    return { success: true, history };
+  } catch (error: any) {
+    console.error('Error getting history:', error);
+    return { success: false, error: error.message, history: [] };
+  }
+});
+
+// Load a specific history record
+ipcMain.handle('explain-load-history', async (_event, historyId: string) => {
+  try {
+    const history = store.get('explainHistory') || [];
+    const record = history.find(h => h.id === historyId);
+
+    if (!record) {
+      return { success: false, error: 'History not found' };
+    }
+
+    return { success: true, record };
+  } catch (error: any) {
+    console.error('Error loading history:', error);
+    return { success: false, error: error.message };
+  }
+});
 

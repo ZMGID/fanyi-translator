@@ -1,7 +1,7 @@
-# Fanyi Translator (MacOS Global Translation Utility)
+# KeyLingo
 
 <p align="center">
-  <img src="public/icon.png" width="128" height="128" alt="Fanyi Icon">
+  <img src="public/icon.png" width="128" height="128" alt="KeyLingo Icon">
 </p>
 
 [English](#english) | [中文](#中文)
@@ -11,12 +11,13 @@
 <a name="english"></a>
 ## 🇬🇧 English
 
-**Fanyi Translator** is a minimalist, global translation utility designed for macOS. Inspired by Spotlight and modern IMEs, it allows you to invoke a translation window anywhere with a keystroke, type your text, and commit the translation directly into your active application.
+**KeyLingo** is a smart translation and AI vision utility designed for macOS. With global hotkeys, you can instantly translate text, analyze screenshots, and work across any application seamlessly.
 
 ### ✨ Key Features
 
 *   **Global Hotkey**: Toggle the translation bar instantly from any app (Default: `Cmd+Option+T`).
-*   **Screenshot Translation (NEW in v1.1.0)**: Capture any part of your screen and translate text from images using GLM-4V OCR (Default: `Cmd+Shift+A`).
+*   **Screenshot Translation**: Capture any part of your screen and translate text from images using GLM-4V or System OCR (Default: `Cmd+Shift+X`).
+*   **Screenshot Explanation (NEW in v1.3.0)**: AI-powered screenshot analysis with conversational Q&A - explain code, designs, or any visual content (Default: `Cmd+Shift+E`).
 *   **Minimalist Design**: Clean, distracting-free UI that floats over your windows. Supports **Light** and **Dark** modes (System sync).
 *   **Smart Translation**:
     *   **Bing Translate**: Fast, unlimited, and free built-in translation.
@@ -26,6 +27,13 @@
 *   **Target Language**: Supports Auto-detection, English, Chinese, Japanese, Korean, French, and German.
 
 ### 📋 Version History
+
+**v1.3.0** (2025-12-21)
+- 🎉 **Project Renamed** to **KeyLingo**
+- ✨ Added **Screenshot Explanation** feature (Cmd+Shift+E) - AI analysis of screenshots with multi-turn conversation
+- ✨ Added **Conversation History** - Save and review last 5 screenshot explanations
+- ✨ Added **Custom Prompts** - Customize AI system and summary prompts
+- 🐛 Fixed tray menu settings bug - window now hides properly after closing settings
 
 **v1.2.0** (2025-12-20)
 - ✨ Added **System OCR** option for screenshot translation (offline, free using macOS Vision framework)
@@ -45,7 +53,7 @@
 ### 🚀 Installation
 
 1.  Download the latest `.dmg` from the [Releases](./release) folder.
-2.  Open the `.dmg` and drag **Fanyi Translator** to your `Applications` folder.
+2.  Open the `.dmg` and drag **KeyLingo** to your `Applications` folder.
 3.  **Permissions**: On first launch, you must grant **Accessibility Permissions** to allow the app to simulate keystrokes (for the Auto-Paste feature).
 
 ### 🛠 Usage
@@ -95,7 +103,7 @@ npm run build
 <a name="中文"></a>
 ## 🇨🇳 中文
 
-**Fanyi Translator** 是一款专为 macOS 设计的极简全局翻译工具。灵感来源于 Spotlight 和现代输入法，允许您随时通过快捷键唤出翻译窗口，输入文本后，将翻译结果直接“上屏”至您当前的应用中。
+**KeyLingo** 是一款专为 macOS 设计的智能翻译和 AI 视觉工具。通过全局快捷键，您可以随时翻译文本、分析截图，并无缝跨应用工作。
 
 ### ✨ 核心功能
 
